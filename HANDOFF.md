@@ -7,14 +7,14 @@ explica arquitectura, convenciones visuales, modelo de datos y puntos ciegos con
 
 ## 1 · Ficha del proyecto
 
-| Campo | Valor |
-|---|---|
-| Producto | Doctiva Learning (doctiva.app): intranet académica con cursos presenciales/virtuales y recursos por enlace. |
-| Stack | React 19 · Vite 7 · TypeScript 5.9 · Tailwind CSS 4 · lucide-react · canvas-confetti. |
-| Tipografía | **Satoshi** (Fontshare CDN, pesos 400–900). Fallback: system-ui. |
-| Kit visual | Lima `#ebff57` · Menta `#7bfcec` · Crema `#f1f0e6` · Tinta `#111112` · Gris `#7f7f80`. |
-| Build | `vite build` → sitio estático en `dist/`. |
-| Backend | Express + Sequelize (repositorio aparte). El front lo consume vía `src/services/api.ts`; contrato en `docs/API.md`. |
+| Campo      | Valor                                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| Producto   | Doctiva Learning (doctiva.app): intranet académica con cursos presenciales/virtuales y recursos por enlace.         |
+| Stack      | React 19 · Vite 7 · TypeScript 5.9 · Tailwind CSS 4 · lucide-react · canvas-confetti.                               |
+| Tipografía | **Satoshi** (Fontshare CDN, pesos 400–900). Fallback: system-ui.                                                    |
+| Kit visual | Lima `#ebff57` · Menta `#7bfcec` · Crema `#f1f0e6` · Tinta `#111112` · Gris `#7f7f80`.                              |
+| Build      | `vite build` → sitio estático en `dist/`.                                                                           |
+| Backend    | Express + Sequelize (repositorio aparte). El front lo consume vía `src/services/api.ts`; contrato en `docs/API.md`. |
 
 ## 2 · Puesta en marcha (3 comandos)
 
@@ -64,29 +64,29 @@ Decisiones clave:
 
 ## 5 · Mapa de funcionalidad → archivo
 
-| Función | Archivo |
-|---|---|
-| Login unificado y roles | `src/components/LoginView.tsx` |
-| Navegación, badges, logout | `src/components/Sidebar.tsx` |
-| Búsqueda global, avisos, CTA | `src/components/Header.tsx` |
-| KPIs y actividad reciente | `src/components/InicioView.tsx` |
-| Cursos como contenedores: alta/baja + recursos anidados | `src/components/CursosView.tsx` |
-| CRUD de alumnos (modal crear/editar + confirmar borrado) | `src/components/AlumnosView.tsx` |
-| Asistente de publicación en 4 pasos | `src/components/ResourceModal.tsx` |
-| Filtros por tipo y búsqueda sobre los recursos anidados | `src/components/CursosView.tsx` |
-| Visor simulado por tipo (ppt/video/pdf/link) | `src/components/ResourcePreviewModal.tsx` |
-| Auditoría y grupos de permisos | `src/components/AuditView.tsx` |
-| Configuración + prueba de conexión al API | `src/components/SettingsView.tsx` |
-| Tokens de diseño (colores, sombras, Satoshi) | `src/index.css` (`@theme`) + `index.html` |
-| Modelo de dominio | `src/types/index.ts` |
-| Cliente del backend | `src/services/api.ts` |
+| Función                                                  | Archivo                                   |
+| -------------------------------------------------------- | ----------------------------------------- |
+| Login unificado y roles                                  | `src/components/LoginView.tsx`            |
+| Navegación, badges, logout                               | `src/components/Sidebar.tsx`              |
+| Búsqueda global, avisos, CTA                             | `src/components/Header.tsx`               |
+| KPIs y actividad reciente                                | `src/components/InicioView.tsx`           |
+| Cursos como contenedores: alta/baja + recursos anidados  | `src/components/CursosView.tsx`           |
+| CRUD de alumnos (modal crear/editar + confirmar borrado) | `src/components/AlumnosView.tsx`          |
+| Asistente de publicación en 4 pasos                      | `src/components/ResourceModal.tsx`        |
+| Filtros por tipo y búsqueda sobre los recursos anidados  | `src/components/CursosView.tsx`           |
+| Visor simulado por tipo (ppt/video/pdf/link)             | `src/components/ResourcePreviewModal.tsx` |
+| Auditoría y grupos de permisos                           | `src/components/AuditView.tsx`            |
+| Configuración + prueba de conexión al API                | `src/components/SettingsView.tsx`         |
+| Tokens de diseño (colores, sombras, Satoshi)             | `src/index.css` (`@theme`) + `index.html` |
+| Modelo de dominio                                        | `src/types/index.ts`                      |
+| Cliente del backend                                      | `src/services/api.ts`                     |
 
 ## 6 · Modelo de datos
 
 Tipos en `src/types/index.ts`; endpoints y reglas del servidor en `docs/API.md`.
 
 - `Resource.assignedCourses` guarda **nombres** de curso (no ids).
-- `Course.studentCount` lo calcula el servidor; tras altas/bajas de alumnos el front vuelve a pedir `/courses`.
+- `Course.studentCount` lo calcula el servidor; tras altas/bajas de alumnos el front vuelve a pedir `/cursos`.
 - `Student.courseCode` referencia `Course.code`.
 
 ## 7 · Convenciones visuales (no romper el kit)

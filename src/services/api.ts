@@ -15,7 +15,7 @@ import type {
  * Contrato de endpoints: docs/API.md
  */
 
-export const API_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(
+export const API_URL = (import.meta.env.BACKEND_URL ?? '/api').replace(
 	/\/$/,
 	''
 );

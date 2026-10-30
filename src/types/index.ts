@@ -124,18 +124,17 @@ export interface Course {
 	temario?: any[]; // por si tu frontend lo usa por defecto
 }
 
-export type NewCourse = Omit<
-	Course,
-	'id' | 'codigo' | 'studentCount' | 'creado_en'
->;
+export type NewCourse = Omit<Course, 'id' | 'studentCount' | 'creado_en'> & {
+	codigo?: string; // <--- Permitimos que viaje el código desde el formulario
+};
 
 /**
  * Vista Alumno (Unifica tabla estudiantes + usuarios + inscripciones)
  */
 export interface Student {
-	id: string; // id de estudiante
-	userId: string; // usuario_id
-	fullName: string; // concat(nombres, ' ', apellidos)
+	id: string;
+	userId: string;
+	fullName: string;
 	firstName: string;
 	lastName: string;
 	email: string;
@@ -146,18 +145,18 @@ export interface Student {
 		courseId: string;
 		courseCode: string;
 		courseName: string;
-		status: CourseStatus;
+		status: string;
 	}[];
 }
 
-/** Datos para registrar/editar un estudiante */
 export interface StudentInput {
 	firstName: string;
 	lastName: string;
 	email: string;
 	phone: string;
 	password?: string;
-	courseId?: string; // id del curso al que se inscribe inicialmente
+	courseId?: string;
+	status?: UserStatus;
 }
 
 /**
@@ -165,20 +164,20 @@ export interface StudentInput {
  */
 export interface Resource {
 	id: string;
-	code: string; // mapeado desde 'codigo'
-	title: string; // mapeado desde 'titulo'
-	description: string; // mapeado desde 'descripcion'
-	subject: string; // mapeado desde 'asignatura'
+	codigo: string;
+	titulo: string;
+	descripcion: string;
+	asignatura: string;
 	url: string;
-	author: string; // mapeado desde 'autor'
-	assignedCourses: string[]; // Nombres de los cursos (para mantener compatibilidad con CursosView)
-	assignedCourseIds: string[]; // IDs de los cursos obtenidos de la relación
-	createdAt: string; // mapeado desde 'creado_en'
+	autor: string;
+	assignedCourses: string[];
+	assignedCourseIds: string[];
+	creado_en: string;
 }
 
 export type NewResource = Omit<
 	Resource,
-	'id' | 'code' | 'createdAt' | 'assignedCourses'
+	'id' | 'codigo' | 'creado_en' | 'assignedCourses'
 > & {
 	assignedCourseIds: string[];
 };
@@ -188,9 +187,11 @@ export interface NewResourceForm {
 	subject: string;
 	description: string;
 	url: string;
-	assignedCourseIds: string[];
+	assignedCourseIds: string[]; // Usamos IDs en lugar de nombres
+	notifyDelegates?: boolean;
+	dueDate?: string;
+	requiresSubmission?: boolean;
 }
-
 // ==========================================
 // 4. AUDITORÍA Y NOTIFICACIONES
 // ==========================================

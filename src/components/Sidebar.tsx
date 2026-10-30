@@ -238,14 +238,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 						<div className="p-3 rounded-2xl bg-[#f1f0e6] text-black flex items-center justify-between">
 							<div className="flex items-center gap-3">
 								<div className="w-10 h-10 rounded-2xl bg-[#111112] text-[#ebff57] font-black flex items-center justify-center text-sm">
-									{user.estudiante?.nombres.split(' ')[0].charAt(0)}
+									{user.rol === 'admin'
+										? 'A'
+										: user.estudiante?.nombres.split(' ')[0].charAt(0)}
 								</div>
 								<div className="min-w-0">
 									<div className="text-xs font-bold truncate">
-										{user.estudiante?.nombres}
+										{user.rol === 'admin'
+											? 'Administrador'
+											: `${user.estudiante?.nombres.split(' ')[0]} ${user.estudiante?.apellidos.split(' ')[0]}`}
 									</div>
-									<div className="text-[11px] text-mute truncate">
-										{user.rol}
+									<div className="text-[14px] text-black truncate font-semibold bg-[#ebff57]">
+										{user.rol.at(0)?.toUpperCase() + user.rol.slice(1)}
 									</div>
 								</div>
 							</div>

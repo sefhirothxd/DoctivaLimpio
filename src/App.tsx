@@ -41,7 +41,7 @@ export default function App() {
 	const [courses, setCourses] = useState<Course[]>([]);
 	const [resources, setResources] = useState<Resource[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
-	const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+	// const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 	const [defaultCourse, setDefaultCourse] = useState<string | undefined>();
@@ -92,7 +92,7 @@ export default function App() {
 		setCourses([]);
 		setResources([]);
 		setStudents([]);
-		setAuditEntries([]);
+		// setAuditEntries([]);
 		setIsMobileMenuOpen(false);
 		setPreviewResource(null);
 		setResourceToDelete(null);
@@ -116,6 +116,7 @@ export default function App() {
 	}, [resetSession]);
 
 	// Carga de datos al iniciar sesión. Alumnos y auditoría solo para administradores.
+	// Carga de datos al iniciar sesión. Alumnos y auditoría solo para administradores.
 	useEffect(() => {
 		if (!user) return;
 		let alive = true;
@@ -125,14 +126,36 @@ export default function App() {
 			api.courses.list(),
 			api.resources.list(),
 			isAdmin ? api.students.list() : Promise.resolve([] as Student[]),
-			isAdmin ? api.audit.list() : Promise.resolve([] as AuditEntry[]),
 		])
-			.then(([courseList, resourceList, studentList, auditList]) => {
+			.then(([courseList, resourceList, studentList]) => {
 				if (!alive) return;
-				setCourses(courseList);
+
+				// SI ES ESTUDIANTE: Filtramos para que solo vea sus cursos asignados
+				if (!isAdmin && user.estudiante) {
+					// Buscamos al estudiante actual dentro de la lista o usamos sus inscripciones si las trae el modelo
+					// Como el endpoint de cursos trae todos, filtramos los que el alumno tenga asignados.
+					// O podemos cargar la lista de alumnos y buscar al usuario logueado:
+					api.students.list().then((allStudents) => {
+						const currentStudent = allStudents.find(
+							(s) => s.userId === user.id || s.email === user.email
+						);
+						if (currentStudent && currentStudent.enrolledCourses) {
+							const enrolledCourseIds = currentStudent.enrolledCourses.map(
+								(c) => c.courseId
+							);
+							setCourses(
+								courseList.filter((c) => enrolledCourseIds.includes(c.id))
+							);
+						} else {
+							setCourses([]); // Si no tiene cursos asignados
+						}
+					});
+				} else {
+					setCourses(courseList); // El admin ve todo
+				}
+
 				setResources(resourceList);
 				setStudents(studentList);
-				setAuditEntries(auditList);
 			})
 			.catch((error) => {
 				if (alive)
@@ -216,7 +239,7 @@ export default function App() {
 		);
 		addToast(
 			'Recurso eliminado',
-			`Se retiró "${target.title}" del repositorio.`
+			`Se retiró "${target.titulo}" del repositorio.`
 		);
 		setResourceToDelete(null);
 	};
@@ -230,7 +253,7 @@ export default function App() {
 		);
 		if (!created) return false;
 		setCourses((current) => [...current, created]);
-		addToast('Curso añadido', `${created.name} ya puede recibir recursos.`);
+		addToast('Curso añadido', `${created.nombre} ya puede recibir recursos.`);
 		return true;
 	};
 
@@ -244,7 +267,7 @@ export default function App() {
 		// El servidor limpia referencias en recursos y alumnos: se vuelve a leer.
 		void refreshResources();
 		if (canManage) void refreshStudents();
-		addToast('Curso eliminado', `${course.name} fue retirado del catálogo.`);
+		addToast('Curso eliminado', `${course.nombre} fue retirado del catálogo.`);
 	};
 
 	/* ---------------------------- Alumnos ----------------------------- */
@@ -255,8 +278,8 @@ export default function App() {
 			'No se pudo añadir el alumno'
 		);
 		if (!created) return false;
-		setStudents((current) => [created, ...current]);
-		void refreshCourses(); // el servidor recalcula studentCount
+		void refreshStudents(); // <-- Recargamos la lista limpia desde el api
+		void refreshCourses();
 		addToast(
 			'Alumno añadido',
 			`${created.fullName} ya forma parte del directorio.`
@@ -273,14 +296,12 @@ export default function App() {
 			'No se pudo actualizar el alumno'
 		);
 		if (!updated) return false;
-		setStudents((current) =>
-			current.map((existing) => (existing.id === id ? updated : existing))
-		);
+
+		// Refrescamos los alumnos y los cursos directamente del backend para sincronizar relaciones
+		void refreshStudents();
 		void refreshCourses();
-		addToast(
-			'Alumno actualizado',
-			`Se guardaron los cambios de ${updated.fullName}.`
-		);
+
+		addToast('Alumno actualizado', `Se guardaron los cambios correctamente.`);
 		return true;
 	};
 
@@ -319,7 +340,7 @@ export default function App() {
 	const handleCopyLink = (resource: Resource) => {
 		const link =
 			resource.url ||
-			`https://doctiva.app/recursos/${resource.code.toLowerCase()}`;
+			`https://doctiva.app/recursos/${resource.codigo.toLowerCase()}`;
 		navigator.clipboard?.writeText(link);
 		addToast('Enlace copiado', link);
 	};
@@ -405,9 +426,9 @@ export default function App() {
 						/>
 					)}
 
-					{activeTab === 'auditoria' && canManage && (
+					{/* {activeTab === 'auditoria' && canManage && (
 						<AuditView entries={auditEntries} />
-					)}
+					)} */}
 					{activeTab === 'configuracion' && canManage && (
 						<SettingsView
 							user={user}
@@ -452,7 +473,7 @@ export default function App() {
 					setDefaultCourse(undefined);
 				}}
 				courses={courses}
-				defaultCourse={defaultCourse}
+				// defaultCourse={defaultCourse}
 				onAddResource={handleAddResource}
 			/>
 			<ResourcePreviewModal

@@ -113,8 +113,8 @@ export const CursosView: React.FC<CursosViewProps> = ({
 					course.docente_nombre.toLowerCase().includes(query) ||
 					resourcesOf(course).some(
 						(resource) =>
-							resource.title.toLowerCase().includes(query) ||
-							resource.subject.toLowerCase().includes(query)
+							resource.titulo.toLowerCase().includes(query) ||
+							resource.asignatura.toLowerCase().includes(query)
 					);
 				return matchesModality && matchesQuery;
 			}),
@@ -145,6 +145,7 @@ export const CursosView: React.FC<CursosViewProps> = ({
 
 		setSaving(true);
 		const ok = await onAddCourse({
+			codigo: `CUR-${String(courses.length + 1).padStart(3, '0')}`,
 			nombre: form.name.trim(),
 			docente_nombre: form.instructor.trim(),
 			horario: form.schedule.trim() || 'Horario por definir',

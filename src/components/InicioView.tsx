@@ -188,11 +188,11 @@ export const InicioView: React.FC<InicioViewProps> = ({
 								</div>
 								<div className="min-w-0 flex-1">
 									<h4 className="text-sm font-bold truncate">
-										{resource.title}
+										{resource.titulo}
 									</h4>
 									<div className="flex flex-wrap items-center gap-2 text-xs text-mute mt-0.5">
 										<span className="font-semibold text-ink">
-											{resource.subject}
+											{resource.asignatura}
 										</span>
 										<span>·</span>
 										<span>{resource.id.length} cursos</span>

@@ -24,13 +24,13 @@ interface ResourceModalProps {
 }
 
 const emptyForm = (defaultCourseId?: string): NewResourceForm => ({
+	code: '',
 	title: '',
 	subject: SUBJECT_OPTIONS[0],
 	description: '',
 	url: '',
 	assignedCourseIds: defaultCourseId ? [defaultCourseId] : [],
 	notifyDelegates: true,
-	dueDate: '',
 	requiresSubmission: false,
 });
 
@@ -42,6 +42,24 @@ const hostnameOf = (url: string) => {
 	}
 };
 
+const courseCodePrefix = (courseName: string) =>
+	courseName
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z]/gi, '')
+		.slice(0, 3)
+		.toUpperCase();
+
+const randomCodeSuffix = () =>
+	Math.floor(Math.random() * 1000)
+		.toString()
+		.padStart(3, '0');
+
+const createCourseCode = (courseName: string) => {
+	const prefix = courseCodePrefix(courseName);
+	return prefix ? `${prefix}-${randomCodeSuffix()}` : '';
+};
+
 export const ResourceModal: React.FC<ResourceModalProps> = ({
 	isOpen,
 	onClose,
@@ -50,12 +68,19 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 	onAddResource,
 }) => {
 	const [step, setStep] = useState(1);
-	const [form, setForm] = useState<NewResourceForm>(() =>
-		emptyForm(defaultCourseId)
-	);
+	const [form, setForm] = useState<NewResourceForm>(() => {
+		const defaultCourse = courses.find(
+			(course) => course.id === defaultCourseId
+		);
+		return {
+			...emptyForm(defaultCourseId),
+			code: defaultCourse ? createCourseCode(defaultCourse.nombre) : '',
+		};
+	});
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [courseSearch, setCourseSearch] = useState('');
 	const [publishing, setPublishing] = useState(false);
+	const [isCourseCodeEdited, setIsCourseCodeEdited] = useState(false);
 
 	if (!isOpen) return null;
 
@@ -64,6 +89,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 		setForm(emptyForm());
 		setErrors({});
 		setCourseSearch('');
+		setIsCourseCodeEdited(false);
 		onClose();
 	};
 
@@ -75,8 +101,21 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 		setErrors((current) => {
 			const next = { ...current };
 			delete next[String(field)];
+			if (field === 'assignedCourseIds') {
+				delete next.code;
+				delete next.courses;
+			}
 			return next;
 		});
+	};
+
+	const setAssignedCourses = (courseIds: string[]) => {
+		setField('assignedCourseIds', courseIds);
+		const firstCourseId = courseIds[0];
+		if (firstCourseId === form.assignedCourseIds[0] || isCourseCodeEdited)
+			return;
+		const firstCourse = courses.find((course) => course.id === firstCourseId);
+		setField('code', firstCourse ? createCourseCode(firstCourse.nombre) : '');
 	};
 
 	const validate = (currentStep: number) => {
@@ -92,9 +131,15 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 			if (!form.description.trim())
 				nextErrors.description =
 					'Añade una descripción para orientar al alumno.';
+			if (!form.code.trim())
+				nextErrors.code = 'Completa el código del recurso.';
+			else if (!/^[A-Z]{3}-\d{3}$/.test(form.code))
+				nextErrors.code = 'Usa el formato de 3 letras, guion y 3 números.';
 		}
-		if (currentStep === 3 && form.assignedCourseIds.length === 0)
-			nextErrors.courses = 'Selecciona al menos un curso.';
+		if (currentStep === 3) {
+			if (form.assignedCourseIds.length === 0)
+				nextErrors.courses = 'Selecciona al menos un curso.';
+		}
 		setErrors(nextErrors);
 		return Object.keys(nextErrors).length === 0;
 	};
@@ -107,8 +152,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 	// Modificado para trabajar con IDs de cursos
 	const toggleCourse = (courseId: string) => {
 		const assigned = form.assignedCourseIds.includes(courseId);
-		setField(
-			'assignedCourseIds',
+		setAssignedCourses(
 			assigned
 				? form.assignedCourseIds.filter((id) => id !== courseId)
 				: [...form.assignedCourseIds, courseId]
@@ -116,17 +160,16 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 	};
 
 	const publish = async () => {
-		if (!validate(3)) return;
+		if (!validate(2) || !validate(3)) return;
 		setPublishing(true);
 		const ok = await onAddResource({
+			codigo: form.code.trim(),
 			titulo: form.title.trim(), // Cambiado de title -> titulo
 			descripcion: form.description.trim(), // Cambiado de description -> descripcion
-			asignatura: form.subject, // Cambiado de subject -> asignatura
+			// Cambiado de subject -> asignatura
 			url: form.url.trim(),
 			assignedCourseIds: form.assignedCourseIds,
 			autor: 'Admin', // O el autor correspondiente si lo requiere
-			// Remueve tags, requiresSubmission o dueDate si no están definidos en NewResource,
-			// o agrégalos en types.ts si los necesitas.
 		});
 		setPublishing(false);
 		if (!ok) return;
@@ -323,37 +366,32 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 								)}
 							</label>
 
-							<div className="grid sm:grid-cols-2 gap-3">
-								<label className="space-y-1 block">
-									<span className="text-[11px] uppercase tracking-wider font-semibold text-mute">
-										Área
+							<label className="space-y-1 block">
+								<span className="text-[11px] uppercase tracking-wider font-semibold text-mute">
+									Código del recurso *
+								</span>
+								<input
+									value={form.code}
+									onChange={(event) => {
+										setField('code', event.target.value.toUpperCase());
+										setIsCourseCodeEdited(true);
+									}}
+									placeholder="ABC-123"
+									required
+									maxLength={7}
+									aria-describedby="course-code-help"
+									className="w-full px-4 py-3 rounded-2xl bg-[#f1f0e6] border border-transparent text-sm font-bold uppercase"
+								/>
+								<span id="course-code-help" className="block text-xs text-mute">
+									Completa 3 letras, un guion y 3 números. Se sugiere según el
+									primer curso asignado; el código final lo genera el servidor.
+								</span>
+								{errors.code && (
+									<span className="text-xs font-semibold text-black">
+										{errors.code}
 									</span>
-									<select
-										value={form.subject}
-										onChange={(event) =>
-											setField('subject', event.target.value)
-										}
-										className="w-full px-4 py-3 rounded-2xl bg-[#f1f0e6] border border-transparent focus:bg-white focus:border-black focus:outline-none text-sm cursor-pointer"
-									>
-										{SUBJECT_OPTIONS.map((subject) => (
-											<option key={subject}>{subject}</option>
-										))}
-									</select>
-								</label>
-								<label className="space-y-1 block">
-									<span className="text-[11px] uppercase tracking-wider font-semibold text-mute">
-										Fecha límite (opcional)
-									</span>
-									<input
-										type="date"
-										value={form.dueDate}
-										onChange={(event) =>
-											setField('dueDate', event.target.value)
-										}
-										className="w-full px-4 py-3 rounded-2xl bg-[#f1f0e6] border border-transparent focus:bg-white focus:border-black focus:outline-none text-sm"
-									/>
-								</label>
-							</div>
+								)}
+							</label>
 
 							<label className="space-y-1 block">
 								<span className="text-[11px] uppercase tracking-wider font-semibold text-mute">
@@ -425,7 +463,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 									<AlertCircle className="w-4 h-4" /> {errors.courses}
 								</div>
 							)}
-
 							<div className="flex flex-col sm:flex-row gap-2">
 								<div className="relative flex-1">
 									<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-mute" />
@@ -439,10 +476,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 								<button
 									type="button"
 									onClick={() =>
-										setField(
-											'assignedCourseIds',
-											courses.map((course) => course.id)
-										)
+										setAssignedCourses(courses.map((course) => course.id))
 									}
 									className="px-4 py-2 rounded-full bg-[#111112] text-[#ebff57] text-xs font-bold cursor-pointer"
 								>
@@ -450,7 +484,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 								</button>
 								<button
 									type="button"
-									onClick={() => setField('assignedCourseIds', [])}
+									onClick={() => setAssignedCourses([])}
 									className="px-4 py-2 rounded-full bg-white border border-black/10 hover:bg-[#f1f0e6] text-xs font-bold cursor-pointer"
 								>
 									Limpiar

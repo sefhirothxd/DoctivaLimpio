@@ -150,7 +150,8 @@ export const api = {
 				nombres: data.firstName,
 				apellidos: data.lastName,
 				telefono: data.phone,
-				courseId: data.courseId,
+				courseIds: data.courseIds,
+				courseId: data.courseIds?.[0] ?? data.courseId,
 				status: data.status,
 			};
 			const raw = await request<any>('/estudiantes', {
@@ -167,7 +168,8 @@ export const api = {
 				email: data.email,
 				telefono: data.phone,
 				status: data.status,
-				courseId: data.courseId,
+				courseIds: data.courseIds,
+				courseId: data.courseIds?.[0] ?? data.courseId,
 			};
 			if (data.firstName) payload.nombres = data.firstName;
 			if (data.lastName) payload.apellidos = data.lastName;
@@ -201,7 +203,6 @@ export const api = {
 				codigo: item.codigo,
 				titulo: item.titulo,
 				descripcion: item.descripcion,
-				asignatura: item.asignatura,
 				url: item.url,
 				autor: item.autor,
 				creado_en: item.creado_en,

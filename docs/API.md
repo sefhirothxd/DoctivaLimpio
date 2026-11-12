@@ -30,15 +30,17 @@ de campos son distintos, **ese es el único archivo que debes adaptar**.
 
 Los tipos están en `src/types/index.ts`.
 
-## Lo que decide el servidor (el frontend ya no lo genera)
+## Responsabilidades del cliente y del servidor
 
 - **`id`** de todas las entidades (UUID o autoincremental, siempre devuelto como string).
-- **`code`** de cursos (`CUR-001`…) y de recursos (`REC-2026-123`), y **`registrationNumber`** de alumnos.
+- **`code`** de cursos (`CUR-001`…) y **`registrationNumber`** de alumnos.
+- El código (`codigo`) de recursos lo envía el formulario (`ABC-123`); el backend debe validarlo y rechazar duplicados.
 - **`Course.studentCount`**: `COUNT` de alumnos por `courseCode`. El frontend vuelve a pedir `/cursos`
   después de crear, mover o borrar alumnos.
 - **`Resource.author`, `createdAt`, `views`**: autor tomado del JWT.
 - **Contraseñas**: se guardan con hash (bcrypt/argon2) y **nunca** se devuelven en `Student`.
   `PUT /students/:id` solo cambia la contraseña si el body trae `password`.
+- **Inscripciones de alumnos**: `StudentInput.courseIds` es un arreglo de IDs de cursos; el backend debe sincronizar todas las inscripciones. El campo `courseId` se envía además con el primer curso por compatibilidad.
 - **Integridad al borrar**:
   - `DELETE /cursos/:id` → alumnos con ese curso quedan con `courseCode = ''`/null y se quita el nombre
     del curso de `Resource.assignedCourses`. El frontend vuelve a leer recursos y alumnos.

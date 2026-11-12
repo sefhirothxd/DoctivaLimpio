@@ -155,6 +155,7 @@ export interface StudentInput {
 	email: string;
 	phone: string;
 	password?: string;
+	courseIds?: string[];
 	courseId?: string;
 	status?: UserStatus;
 }
@@ -167,7 +168,6 @@ export interface Resource {
 	codigo: string;
 	titulo: string;
 	descripcion: string;
-	asignatura: string;
 	url: string;
 	autor: string;
 	assignedCourses: string[];
@@ -177,19 +177,19 @@ export interface Resource {
 
 export type NewResource = Omit<
 	Resource,
-	'id' | 'codigo' | 'creado_en' | 'assignedCourses'
+	'id' | 'creado_en' | 'assignedCourses'
 > & {
 	assignedCourseIds: string[];
 };
 
 export interface NewResourceForm {
+	code: string;
 	title: string;
 	subject: string;
 	description: string;
 	url: string;
 	assignedCourseIds: string[]; // Usamos IDs en lugar de nombres
 	notifyDelegates?: boolean;
-	dueDate?: string;
 	requiresSubmission?: boolean;
 }
 // ==========================================

@@ -71,11 +71,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 		icon: React.ComponentType<{ className?: string }>;
 	}> = [
 		{
-			id: 'auditoria' as ActiveTab,
-			label: 'Auditoría & Permisos',
-			icon: ShieldCheck,
-		},
-		{
 			id: 'configuracion' as ActiveTab,
 			label: 'Configuración General',
 			icon: Settings,
@@ -101,8 +96,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 					isMobileOpen ? 'translate-x-0' : '-translate-x-full'
 				}`}
 			>
-				<div className="h-full flex flex-col justify-between bg-[#111112] text-[#f1f0e6] rounded-[32px] overflow-hidden shadow-pop">
-					<div>
+				{/* ÚNICO CAMBIO: Añadimos h-full, flex, flex-col y overflow-y-auto aquí */}
+				<div className="h-full flex flex-col justify-between bg-[#111112] text-[#f1f0e6] rounded-[32px] shadow-pop overflow-hidden">
+					{/* SECCIÓN SUPERIOR CON SCROLL */}
+					<div className="overflow-y-auto overflow-x-hidden p-2 space-y-2 flex-1">
 						<div className="p-5 flex items-center justify-between">
 							<div className="flex items-center gap-3">
 								<div className="w-11 h-11 rounded-2xl bg-[#ebff57] text-black flex items-center justify-center">
@@ -248,7 +245,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 											? 'Administrador'
 											: `${user.estudiante?.nombres.split(' ')[0]} ${user.estudiante?.apellidos.split(' ')[0]}`}
 									</div>
-									<div className="text-[14px] text-black truncate font-semibold bg-[#ebff57]">
+									{/* //bg-[#ebff57] */}
+									<div className="text-[14px] text-black truncate font-semibold">
 										{user.rol.at(0)?.toUpperCase() + user.rol.slice(1)}
 									</div>
 								</div>

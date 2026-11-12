@@ -36,7 +36,7 @@ const errorMessage = (error: unknown) =>
 
 export default function App() {
 	const [user, setUser] = useState<AuthUser | null>(null);
-	const [activeTab, setActiveTab] = useState<ActiveTab>('cursos');
+	const [activeTab, setActiveTab] = useState<ActiveTab>('inicio');
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [courses, setCourses] = useState<Course[]>([]);
 	const [resources, setResources] = useState<Resource[]>([]);
@@ -174,9 +174,10 @@ export default function App() {
 	}, [user, addToast]);
 
 	const refreshCourses = () =>
-		run(() => api.courses.list(), 'No se pudieron actualizar los cursos').then(
-			(list) => list && setCourses(list)
-		);
+		run(
+			() => api.resources.list(),
+			'No se pudieron actualizar los cursos'
+		).then((list) => list && setResources(list));
 	const refreshResources = () =>
 		run(
 			() => api.resources.list(),
@@ -202,7 +203,7 @@ export default function App() {
 
 	const handleLogin = (authenticatedUser: AuthUser) => {
 		setUser(authenticatedUser);
-		setActiveTab('cursos');
+		setActiveTab('inicio');
 	};
 
 	const handleLogout = () => {
@@ -219,6 +220,7 @@ export default function App() {
 		);
 		if (!created) return false;
 		setResources((current) => [created, ...current]);
+		await refreshCourses();
 		addToast(
 			'Recurso publicado',
 			`Disponible en ${created.id.length} curso(s).`

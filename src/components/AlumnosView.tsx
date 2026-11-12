@@ -34,7 +34,7 @@ interface StudentDraft {
 	lastName: string;
 	email: string;
 	phone: string;
-	courseId: string;
+	courseIds: string[];
 	status: UserStatus;
 	password: string;
 }
@@ -69,7 +69,7 @@ export const AlumnosView: React.FC<AlumnosViewProps> = ({
 		lastName: '',
 		email: '',
 		phone: '',
-		courseId: '',
+		courseIds: [],
 		status: 'activo',
 		password: '',
 	});
@@ -121,7 +121,7 @@ export const AlumnosView: React.FC<AlumnosViewProps> = ({
 			lastName: '',
 			email: '',
 			phone: '',
-			courseId: courses[0]?.id || '',
+			courseIds: courses[0]?.id ? [courses[0].id] : [],
 			status: 'activo',
 			password: genPassword(),
 		});
@@ -136,7 +136,7 @@ export const AlumnosView: React.FC<AlumnosViewProps> = ({
 			lastName: student.lastName || '',
 			email: student.email,
 			phone: student.phone || '',
-			courseId: student.enrolledCourses?.[0]?.courseId || courses[0]?.id || '',
+			courseIds: student.enrolledCourses?.map((course) => course.courseId) || [],
 			status: student.status,
 			password: '',
 		});
@@ -171,7 +171,7 @@ export const AlumnosView: React.FC<AlumnosViewProps> = ({
 			lastName: draft.lastName.trim(),
 			email: draft.email.trim(),
 			phone: draft.phone.trim(),
-			courseId: draft.courseId || undefined,
+			courseIds: draft.courseIds,
 			status: draft.status, // Asegúrate de mandar el estado seleccionado ('activo' o 'inactivo')
 			// Si el campo de contraseña tiene texto, lo mandamos; si está vacío, no se envía
 			...(draft.password.trim() ? { password: draft.password.trim() } : {}),
@@ -490,25 +490,50 @@ export const AlumnosView: React.FC<AlumnosViewProps> = ({
 							</div>
 
 							<div className="grid sm:grid-cols-2 gap-3">
-								<label className="space-y-1 block">
-									<span className="text-[11px] uppercase tracking-wider font-semibold text-mute">
-										Curso inicial
+								<div className="space-y-1">
+									<span className="text-[11px] uppercase tracking-wider font-semibold text-mute block">
+										Cursos
 									</span>
-									<select
-										value={draft.courseId}
-										onChange={(event) =>
-											setDraft({ ...draft, courseId: event.target.value })
-										}
-										className="w-full px-4 py-3 rounded-2xl bg-[#f1f0e6] border border-transparent focus:bg-white focus:border-black focus:outline-none text-sm cursor-pointer"
-									>
-										<option value="">Sin curso inicial</option>
-										{courses.map((course) => (
-											<option key={course.id} value={course.id}>
-												{course.nombre}
-											</option>
-										))}
-									</select>
-								</label>
+									<div className="max-h-36 overflow-y-auto rounded-2xl bg-[#f1f0e6] p-2 space-y-1">
+										{courses.length === 0 ? (
+											<p className="px-2 py-2 text-xs text-mute">
+												No hay cursos disponibles.
+											</p>
+										) : (
+											courses.map((course) => {
+												const selected = draft.courseIds.includes(course.id);
+												return (
+													<label
+														key={course.id}
+														className="flex items-center gap-2 rounded-xl px-2 py-2 text-sm cursor-pointer hover:bg-white"
+													>
+														<input
+															type="checkbox"
+															checked={selected}
+															onChange={() =>
+																setDraft((current) => ({
+																	...current,
+																	courseIds: selected
+																		? current.courseIds.filter(
+																				(id) => id !== course.id
+																			)
+																		: [...current.courseIds, course.id],
+																}))
+															}
+															className="brand-check w-4 h-4"
+														/>
+														<span className="min-w-0 truncate">
+															{course.nombre}
+														</span>
+													</label>
+												);
+											})
+										)}
+									</div>
+									<p className="px-1 text-[11px] text-mute">
+										Puedes seleccionar varios cursos.
+									</p>
+								</div>
 								<div className="space-y-1">
 									<span className="text-[11px] uppercase tracking-wider font-semibold text-mute block">
 										Estado

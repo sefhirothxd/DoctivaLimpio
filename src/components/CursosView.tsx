@@ -14,7 +14,13 @@ import {
 	Users,
 	X,
 } from 'lucide-react';
-import { Course, Modality, NewCourse, Resource } from '../types';
+import {
+	Course,
+	CourseUpdate,
+	Modality,
+	NewCourse,
+	Resource,
+} from '../types';
 import { CourseDetailModal } from './CourseDetailModal';
 
 interface TemarioUnit {
@@ -53,6 +59,7 @@ interface CursosViewProps {
 	setSearchQuery: (value: string) => void;
 	onAddCourse: (course: NewCourse) => Promise<boolean>;
 	onDeleteCourse: (course: Course) => void;
+	onUpdateCourse: (id: string, data: CourseUpdate) => Promise<boolean>;
 	onAddResourceForCourse: (courseName: string) => void;
 	onPreviewResource: (resource: Resource) => void;
 	onDeleteResource: (resource: Resource) => void;
@@ -75,6 +82,7 @@ export const CursosView: React.FC<CursosViewProps> = ({
 	setSearchQuery,
 	onAddCourse,
 	onDeleteCourse,
+	onUpdateCourse,
 	onAddResourceForCourse,
 	onPreviewResource,
 	onDeleteResource,
@@ -511,9 +519,11 @@ export const CursosView: React.FC<CursosViewProps> = ({
 
 			{/* Detalle: temario + recursos */}
 			<CourseDetailModal
-				course={openCourse}
+				// Se toma de `courses` para reflejar ediciones sin reabrir el modal.
+				course={courses.find((c) => c.id === openCourse?.id) ?? null}
 				resources={resources}
 				canManage={canManage}
+				onUpdateCourse={onUpdateCourse}
 				onClose={() => setOpenCourse(null)}
 				onAddResourceForCourse={(name) => {
 					setOpenCourse(null);

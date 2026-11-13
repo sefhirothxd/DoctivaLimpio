@@ -124,6 +124,18 @@ export interface Course {
 	temario?: any[]; // por si tu frontend lo usa por defecto
 }
 
+/** Campos de un curso que se pueden editar desde el modal de detalle. */
+export type CourseUpdate = Pick<
+	Course,
+	| 'codigo'
+	| 'nombre'
+	| 'descripcion'
+	| 'docente_nombre'
+	| 'modalidad'
+	| 'horario'
+	| 'aula'
+>;
+
 export type NewCourse = Omit<Course, 'id' | 'studentCount' | 'creado_en'> & {
 	codigo?: string; // <--- Permitimos que viaje el código desde el formulario
 };

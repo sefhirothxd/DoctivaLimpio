@@ -5,6 +5,7 @@ import {
 	AuditEntry,
 	AuthUser,
 	Course,
+	CourseUpdate,
 	NewCourse,
 	NewResource,
 	Resource,
@@ -282,6 +283,25 @@ export default function App() {
 		return true;
 	};
 
+	const handleUpdateCourse = async (
+		id: string,
+		data: CourseUpdate
+	): Promise<boolean> => {
+		const done = await run(
+			() => api.courses.update(id, data).then(() => true),
+			'No se pudo actualizar el curso'
+		);
+		if (!done) return false;
+		// Se aplica localmente lo enviado (el backend puede no devolver el curso completo).
+		setCourses((current) =>
+			current.map((item) => (item.id === id ? { ...item, ...data } : item))
+		);
+		// Los recursos referencian al curso por nombre: se vuelve a leer.
+		void refreshResources();
+		addToast('Curso actualizado', `${data.nombre} se guardó correctamente.`);
+		return true;
+	};
+
 	const handleDeleteCourse = async (course: Course) => {
 		const done = await run(
 			() => api.courses.remove(course.id).then(() => true),
@@ -437,6 +457,7 @@ export default function App() {
 							onDeleteResource={setResourceToDelete}
 							onCopyLink={handleCopyLink}
 							onReorderResources={handleReorderResources}
+							onUpdateCourse={handleUpdateCourse}
 						/>
 					)}
 

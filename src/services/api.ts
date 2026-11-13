@@ -2,6 +2,7 @@ import type {
 	AuditEntry,
 	AuthUser,
 	Course,
+	CourseUpdate,
 	NewCourse,
 	NewResource,
 	Resource,
@@ -72,7 +73,7 @@ async function request<T>(
 	if (!response.ok) {
 		const payload = await response.json().catch(() => null);
 		throw new ApiError(
-			payload?.message ?? `El servidor respondió ${response.status}.`,
+			payload?.message ?? payload?.mensaje ?? `El servidor respondió ${response.status}.`,
 			response.status
 		);
 	}
@@ -135,6 +136,11 @@ export const api = {
 			request<Course>('/cursos', { method: 'POST', body: data }),
 		remove: (id: string) =>
 			request<void>(`/cursos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+		update: (id: string, data: CourseUpdate) =>
+			request<void>(`/cursos/${encodeURIComponent(id)}`, {
+				method: 'PUT',
+				body: data,
+			}),
 		/** Guarda el orden de los recursos de un curso (ids en el orden deseado). */
 		reorderResources: (id: string, resourceIds: string[]) =>
 			request<void>(`/cursos/${encodeURIComponent(id)}/recursos/orden`, {

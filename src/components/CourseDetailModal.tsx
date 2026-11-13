@@ -10,19 +10,21 @@ import {
 	GripVertical,
 	Link2,
 	ListChecks,
+	Pencil,
 	Plus,
 	Trash2,
 	UserRound,
 	Users,
 	X,
 } from 'lucide-react';
-import { Course, Resource } from '../types';
+import { Course, CourseUpdate, Modality, Resource } from '../types';
 
 interface CourseDetailModalProps {
 	course: Course | null;
 	resources: Resource[];
 	canManage: boolean;
 	onClose: () => void;
+	onUpdateCourse: (id: string, data: CourseUpdate) => Promise<boolean>;
 	onAddResourceForCourse: (courseName: string) => void;
 	onPreviewResource: (resource: Resource) => void;
 	onDeleteResource: (resource: Resource) => void;
@@ -30,7 +32,23 @@ interface CourseDetailModalProps {
 	onReorderResources: (courseId: string, ids: string[]) => void;
 }
 
-const hostnameOf =(url: string) => {
+// Fecha legible en hora de Perú (UTC-5), p. ej. "11 sep 2026, 1:24 p. m."
+const formatCreated = (iso?: string) => {
+	if (!iso) return '';
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return iso;
+	return new Intl.DateTimeFormat('es-PE', {
+		timeZone: 'America/Lima',
+		day: 'numeric',
+		month: 'short',
+		year: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true,
+	}).format(date);
+};
+
+const hostnameOf = (url: string) => {
 	try {
 		return new URL(url).hostname.replace(/^www\./, '');
 	} catch {
@@ -43,12 +61,24 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 	resources,
 	canManage,
 	onClose,
+	onUpdateCourse,
 	onAddResourceForCourse,
 	onPreviewResource,
 	onDeleteResource,
 	onCopyLink,
 	onReorderResources,
 }) => {
+	const [editing, setEditing] = useState(false);
+	const [draft, setDraft] = useState<CourseUpdate>({
+		codigo: '',
+		nombre: '',
+		descripcion: '',
+		docente_nombre: '',
+		modalidad: 'Presencial',
+		horario: '',
+		aula: '',
+	});
+	const [saving, setSaving] = useState(false);
 	const [draggingId, setDraggingId] = useState<string | null>(null);
 	const [drop, setDrop] = useState<{
 		id: string;
@@ -87,6 +117,52 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 	};
 	const isVirtual = course.modalidad === 'Virtual';
 
+	const startEdit = () => {
+		setDraft({
+			codigo: course.codigo ?? '',
+			nombre: course.nombre ?? '',
+			descripcion: course.descripcion ?? '',
+			docente_nombre: course.docente_nombre ?? '',
+			modalidad: course.modalidad,
+			horario: course.horario ?? '',
+			aula: course.aula ?? '',
+		});
+		setEditing(true);
+	};
+
+	const setField = <K extends keyof CourseUpdate>(
+		key: K,
+		value: CourseUpdate[K]
+	) => setDraft((d) => ({ ...d, [key]: value }));
+
+	// Campos obligatorios en el backend (allowNull: false).
+	const canSave =
+		!saving &&
+		[draft.codigo, draft.nombre, draft.docente_nombre, draft.horario, draft.aula]
+			.every((v) => v.trim());
+
+	const saveEdit = async () => {
+		if (!canSave) return;
+		setSaving(true);
+		const ok = await onUpdateCourse(course.id, {
+			codigo: draft.codigo.trim(),
+			nombre: draft.nombre.trim(),
+			descripcion: draft.descripcion.trim(),
+			docente_nombre: draft.docente_nombre.trim(),
+			modalidad: draft.modalidad,
+			horario: draft.horario.trim(),
+			aula: draft.aula.trim(),
+		});
+		setSaving(false);
+		if (ok) setEditing(false);
+	};
+
+	const fieldClass = `w-full rounded-xl px-3 py-2 text-sm outline-none border ${
+		isVirtual
+			? 'bg-white/10 border-white/20 text-[#f1f0e6]'
+			: 'bg-white/80 border-black/20 text-black'
+	}`;
+
 	return (
 		<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-6">
 			<div
@@ -109,7 +185,9 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 								<GraduationCap className="w-6 h-6" />
 							</div>
 							<div className="min-w-0">
-								<div className="flex items-center gap-2 flex-wrap">
+								<div
+									className={`flex items-center gap-2 flex-wrap ${editing ? 'hidden' : ''}`}
+								>
 									<span className="text-[10px] font-black uppercase tracking-widest opacity-70">
 										{course.codigo}
 									</span>
@@ -128,18 +206,112 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 										{course.modalidad}
 									</span>
 								</div>
-								<h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight mt-1">
-									{course.nombre}
-								</h2>
-								<p
-									className={`text-sm mt-1 max-w-xl ${isVirtual ? 'text-[#f1f0e6]/70' : 'text-black/70'}`}
-								>
-									{course.descripcion}
-								</p>
+								{editing ? (
+									<div className="space-y-2 w-[min(36rem,60vw)]">
+										<div className="grid grid-cols-2 gap-2">
+											<input
+												value={draft.codigo}
+												onChange={(e) => setField('codigo', e.target.value)}
+												placeholder="Código"
+												className={fieldClass}
+											/>
+											<select
+												value={draft.modalidad}
+												onChange={(e) =>
+													setField('modalidad', e.target.value as Modality)
+												}
+												className={fieldClass}
+											>
+												<option value="Presencial">Presencial</option>
+												<option value="Virtual">Virtual</option>
+											</select>
+										</div>
+										<input
+											value={draft.nombre}
+											onChange={(e) =>
+												setDraft((d) => ({ ...d, nombre: e.target.value }))
+											}
+											placeholder="Nombre del curso"
+											className={`${fieldClass} text-lg font-bold`}
+										/>
+										<textarea
+											value={draft.descripcion}
+											onChange={(e) =>
+												setDraft((d) => ({ ...d, descripcion: e.target.value }))
+											}
+											rows={3}
+											placeholder="Descripción"
+											className={fieldClass}
+										/>
+										<div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+											<input
+												value={draft.docente_nombre}
+												onChange={(e) => setField('docente_nombre', e.target.value)}
+												placeholder="Docente"
+												className={fieldClass}
+											/>
+											<input
+												value={draft.horario}
+												onChange={(e) => setField('horario', e.target.value)}
+												placeholder="Horario"
+												className={fieldClass}
+											/>
+											<input
+												value={draft.aula}
+												onChange={(e) => setField('aula', e.target.value)}
+												placeholder="Aula"
+												className={fieldClass}
+											/>
+										</div>
+										<div className="flex gap-2">
+											<button
+												onClick={saveEdit}
+												disabled={!canSave}
+												className="px-4 py-1.5 rounded-full bg-black text-[#ebff57] text-xs font-bold cursor-pointer disabled:opacity-50"
+											>
+												{saving ? 'Guardando…' : 'Guardar'}
+											</button>
+											<button
+												onClick={() => setEditing(false)}
+												disabled={saving}
+												className="px-4 py-1.5 rounded-full bg-black/10 text-xs font-bold cursor-pointer"
+											>
+												Cancelar
+											</button>
+										</div>
+									</div>
+								) : (
+									<>
+										<h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight mt-1">
+											{course.nombre}
+										</h2>
+										<p
+											className={`text-sm mt-1 max-w-xl ${isVirtual ? 'text-[#f1f0e6]/70' : 'text-black/70'}`}
+										>
+											{course.descripcion}
+										</p>
+									</>
+								)}
 							</div>
 						</div>
+						{canManage && !editing && (
+							<button
+								onClick={startEdit}
+								title="Editar curso"
+								className={`ml-auto w-10 h-10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
+									isVirtual
+										? 'bg-white/10 hover:bg-white/20'
+										: 'bg-black/10 hover:bg-black hover:text-[#ebff57]'
+								}`}
+							>
+								<Pencil className="w-4 h-4" />
+							</button>
+						)}
 						<button
-							onClick={onClose}
+							onClick={() => {
+								setEditing(false);
+								onClose();
+							}}
 							className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
 								isVirtual
 									? 'bg-white/10 hover:bg-white/20'
@@ -150,7 +322,9 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 						</button>
 					</div>
 
-					<div className="mt-5 flex items-center gap-3 flex-wrap text-xs font-semibold">
+					<div
+						className={`mt-5 flex items-center gap-3 flex-wrap text-xs font-semibold ${editing ? 'hidden' : ''}`}
+					>
 						<span
 							className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isVirtual ? 'bg-white/10' : 'bg-white/70'}`}
 						>
@@ -221,7 +395,9 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 											draggingId !== String(resource.id) && (
 												<span
 													className={`absolute left-2 right-2 h-1 rounded-full bg-[#ebff57] ring-1 ring-black pointer-events-none ${
-														drop.position === 'before' ? '-top-1.5' : '-bottom-1.5'
+														drop.position === 'before'
+															? '-top-1.5'
+															: '-bottom-1.5'
 													}`}
 												/>
 											)}
@@ -251,15 +427,11 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 													{resource.titulo}
 												</button>
 												<div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-mute">
-													<span>{resource.asignatura}</span>
-													<span>·</span>
-													<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#f1f0e6] font-semibold">
+													<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-canvas font-semibold">
 														<ExternalLink className="w-3 h-3" />
 														{hostnameOf(resource.url)}
 													</span>
-													<span>· {resource.creado_en}</span>
-													//vistas resource.vistas
-													<span>· {1000} vistas</span>
+													<span>· {formatCreated(resource.creado_en)}</span>
 												</div>
 											</div>
 										</div>
@@ -311,9 +483,6 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 				</div>
 
 				<div className="p-5 sm:p-6 border-t border-black/5 flex items-center justify-between gap-3">
-					<span className="text-xs text-mute hidden sm:block">
-						doctiva.app · {course.modalidad} · {course.codigo}
-					</span>
 					<div className="flex items-center gap-2 ml-auto">
 						<button
 							onClick={onClose}

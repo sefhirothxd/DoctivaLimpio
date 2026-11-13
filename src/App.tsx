@@ -246,6 +246,29 @@ export default function App() {
 		setResourceToDelete(null);
 	};
 
+	const handleReorderResources = async (courseId: string, ids: string[]) => {
+		const previous = resources;
+		// Optimista: se refleja al instante y se revierte si el backend falla.
+		setResources((current) =>
+			current.map((resource) =>
+				ids.includes(resource.id)
+					? {
+							...resource,
+							courseOrder: {
+								...resource.courseOrder,
+								[courseId]: ids.indexOf(resource.id),
+							},
+						}
+					: resource
+			)
+		);
+		const done = await run(
+			() => api.courses.reorderResources(courseId, ids).then(() => true),
+			'No se pudo guardar el orden de los recursos'
+		);
+		if (!done) setResources(previous);
+	};
+
 	/* ----------------------------- Cursos ----------------------------- */
 
 	const handleAddCourse = async (data: NewCourse): Promise<boolean> => {
@@ -413,6 +436,7 @@ export default function App() {
 							onPreviewResource={setPreviewResource}
 							onDeleteResource={setResourceToDelete}
 							onCopyLink={handleCopyLink}
+							onReorderResources={handleReorderResources}
 						/>
 					)}
 

@@ -172,6 +172,8 @@ export interface Resource {
 	autor: string;
 	assignedCourses: string[];
 	assignedCourseIds: string[];
+	/** Posición del recurso dentro de cada curso: { [cursoId]: orden }. */
+	courseOrder?: Record<string, number>;
 	creado_en: string;
 }
 

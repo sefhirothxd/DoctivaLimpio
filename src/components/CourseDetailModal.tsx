@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
 	BookOpen,
 	CalendarDays,
@@ -7,6 +7,7 @@ import {
 	ExternalLink,
 	Globe,
 	GraduationCap,
+	GripVertical,
 	Link2,
 	ListChecks,
 	Plus,
@@ -26,9 +27,10 @@ interface CourseDetailModalProps {
 	onPreviewResource: (resource: Resource) => void;
 	onDeleteResource: (resource: Resource) => void;
 	onCopyLink: (resource: Resource) => void;
+	onReorderResources: (courseId: string, ids: string[]) => void;
 }
 
-const hostnameOf = (url: string) => {
+const hostnameOf =(url: string) => {
 	try {
 		return new URL(url).hostname.replace(/^www\./, '');
 	} catch {
@@ -45,14 +47,44 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 	onPreviewResource,
 	onDeleteResource,
 	onCopyLink,
+	onReorderResources,
 }) => {
+	const [draggingId, setDraggingId] = useState<string | null>(null);
+	const [drop, setDrop] = useState<{
+		id: string;
+		position: 'before' | 'after';
+	} | null>(null);
+
 	if (!course) return null;
 
-	const courseResources = resources.filter((resource) => {
-		// Si usas IDs de cursos (Recomendado):
-		const ids = resource.assignedCourseIds ?? [];
-		return ids.includes(course.id);
-	});
+	const courseResources = resources
+		.filter((resource) => {
+			// Si usas IDs de cursos (Recomendado):
+			const ids = resource.assignedCourseIds ?? [];
+			return ids.includes(course.id);
+		})
+		.sort((a, b) => {
+			// Sin orden guardado, se mantienen al final en su orden original (sort estable).
+			const oa = a.courseOrder?.[course.id] ?? Infinity;
+			const ob = b.courseOrder?.[course.id] ?? Infinity;
+			return oa === ob ? 0 : oa - ob;
+		});
+
+	const resetDrag = () => {
+		setDraggingId(null);
+		setDrop(null);
+	};
+
+	const handleDrop = () => {
+		if (!draggingId || !drop || draggingId === drop.id) return resetDrag();
+		const ids = courseResources.map((r) => String(r.id));
+		const from = ids.indexOf(draggingId);
+		ids.splice(from, 1);
+		const target = ids.indexOf(drop.id);
+		ids.splice(drop.position === 'before' ? target : target + 1, 0, draggingId);
+		onReorderResources(course.id, ids);
+		resetDrag();
+	};
 	const isVirtual = course.modalidad === 'Virtual';
 
 	return (
@@ -159,9 +191,47 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
 								{courseResources.map((resource, index) => (
 									<li
 										key={resource.id}
-										className="rounded-2xl bg-white shadow-inset-line p-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-[#f1f0e6] transition-colors"
+										draggable={canManage}
+										onDragStart={(event) => {
+											event.dataTransfer.effectAllowed = 'move';
+											setDraggingId(String(resource.id));
+										}}
+										onDragOver={(event) => {
+											if (!draggingId) return;
+											event.preventDefault();
+											const rect = event.currentTarget.getBoundingClientRect();
+											const position =
+												event.clientY < rect.top + rect.height / 2
+													? 'before'
+													: 'after';
+											const id = String(resource.id);
+											if (drop?.id !== id || drop.position !== position)
+												setDrop({ id, position });
+										}}
+										onDrop={(event) => {
+											event.preventDefault();
+											handleDrop();
+										}}
+										onDragEnd={resetDrag}
+										className={`relative rounded-2xl bg-white shadow-inset-line p-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-[#f1f0e6] transition-colors ${
+											draggingId === String(resource.id) ? 'opacity-40' : ''
+										}`}
 									>
+										{drop?.id === String(resource.id) &&
+											draggingId !== String(resource.id) && (
+												<span
+													className={`absolute left-2 right-2 h-1 rounded-full bg-[#ebff57] ring-1 ring-black pointer-events-none ${
+														drop.position === 'before' ? '-top-1.5' : '-bottom-1.5'
+													}`}
+												/>
+											)}
 										<div className="flex items-center gap-3 flex-1 min-w-0">
+											{canManage && (
+												<GripVertical
+													className="w-4 h-4 text-mute shrink-0 cursor-grab active:cursor-grabbing"
+													aria-label="Arrastrar para reordenar"
+												/>
+											)}
 											<span className="w-11 h-11 rounded-2xl bg-[#111112] text-[#ebff57] flex items-center justify-center shrink-0">
 												{index + 1 > 9 ? (
 													<span className="text-sm font-black">

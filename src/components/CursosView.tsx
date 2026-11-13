@@ -57,6 +57,7 @@ interface CursosViewProps {
 	onPreviewResource: (resource: Resource) => void;
 	onDeleteResource: (resource: Resource) => void;
 	onCopyLink: (resource: Resource) => void;
+	onReorderResources: (courseId: string, ids: string[]) => void;
 }
 
 const ACCENTS = [
@@ -78,6 +79,7 @@ export const CursosView: React.FC<CursosViewProps> = ({
 	onPreviewResource,
 	onDeleteResource,
 	onCopyLink,
+	onReorderResources,
 }) => {
 	const [modalityFilter, setModalityFilter] = useState<Modality | 'all'>('all');
 	const [openCourse, setOpenCourse] = useState<Course | null>(null);
@@ -520,6 +522,7 @@ export const CursosView: React.FC<CursosViewProps> = ({
 				onPreviewResource={onPreviewResource}
 				onDeleteResource={onDeleteResource}
 				onCopyLink={onCopyLink}
+				onReorderResources={onReorderResources}
 			/>
 
 			{/* Confirmación de borrado */}

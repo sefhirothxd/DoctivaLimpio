@@ -135,6 +135,12 @@ export const api = {
 			request<Course>('/cursos', { method: 'POST', body: data }),
 		remove: (id: string) =>
 			request<void>(`/cursos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+		/** Guarda el orden de los recursos de un curso (ids en el orden deseado). */
+		reorderResources: (id: string, resourceIds: string[]) =>
+			request<void>(`/cursos/${encodeURIComponent(id)}/recursos/orden`, {
+				method: 'PUT',
+				body: { ids: resourceIds },
+			}),
 	},
 
 	students: {
@@ -212,6 +218,13 @@ export const api = {
 					: [],
 				// Extraemos los IDs de los cursos para que el filtro por ID funcione perfecto
 				assignedCourseIds: item.cursos ? item.cursos.map((c: any) => c.id) : [],
+				// Posición del recurso en cada curso (campo "orden" de la tabla pivote)
+				courseOrder: Object.fromEntries(
+					(item.cursos ?? [])
+						// Sequelize anida los campos de la tabla puente en "RecursoCurso"
+						.map((c: any) => [c.id, c.orden ?? c.RecursoCurso?.orden])
+						.filter(([, orden]: [string, unknown]) => typeof orden === 'number')
+				),
 			}));
 		},
 		create: (data: NewResource) =>

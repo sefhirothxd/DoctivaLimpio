@@ -18,6 +18,7 @@ de campos son distintos, **ese es el único archivo que debes adaptar**.
 | GET    | `/cursos`                | cualquiera | —                       | `Course[]` (con `studentCount` calculado) |
 | POST   | `/cursos`                | admin      | `NewCourse`             | `Course` (201)                            |
 | DELETE | `/cursos/:id`            | admin      | —                       | 204                                       |
+| PUT    | `/cursos/:id/recursos/orden` | admin  | `{ ids: string[] }`     | 204                                       |
 | GET    | `/recursos`              | cualquiera | —                       | `Resource[]` (más recientes primero)      |
 | POST   | `/recursos`              | admin      | `NewResource`           | `Resource` (201)                          |
 | DELETE | `/recursos/:id`          | admin      | —                       | 204                                       |
@@ -45,6 +46,11 @@ Los tipos están en `src/types/index.ts`.
   - `DELETE /cursos/:id` → alumnos con ese curso quedan con `courseCode = ''`/null y se quita el nombre
     del curso de `Resource.assignedCourses`. El frontend vuelve a leer recursos y alumnos.
   - Valida unicidad de `code`, `registrationNumber` y `email`.
+- **Orden de recursos por curso**: la tabla pivote recurso–curso lleva una columna `orden` (entero, 0 = primero).
+  - `GET /recursos` debe incluir `orden` en cada elemento de `cursos` (`cursos: [{ id, nombre, orden }]`).
+  - `PUT /cursos/:id/recursos/orden` recibe `{ ids }` con los ids de recurso en el orden deseado y guarda
+    `orden = índice` para cada uno, en una transacción. Valida que todos los ids pertenezcan al curso.
+  - Recursos nuevos asignados a un curso: `orden = MAX(orden) + 1` de ese curso.
 - **Permisos reales**: el frontend solo oculta botones; los roles se validan en cada ruta con middleware.
 
 ## Notas de modelado (Sequelize)
